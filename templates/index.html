@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Cloud ML Hotdog</title>
+    <link href="https://fonts.googleapis.com/css?family=Roboto" rel="stylesheet">
+    <style>
+      #status .string { color: green; }
+      #status .number { color: darkorange; }
+      #status .boolean { color: blue; }
+      #status .null { color: magenta; }
+      #status .key { color: red; }
+      .show { display: inline-block; }
+      .hide { display: none !important; }
+
+      * { box-sizing: border-box; }
+      html, body {
+        font-size: 1.15rem;
+        font-weight: 300;
+        font-color: #212121;
+        font-family: "Roboto", sans-serif;
+        width: 100%;
+        height: 100%;
+      }
+
+      .container {
+        width: 100%;
+        height: 100%;
+        max-width: 500px;
+        margin: 0 auto;
+        position: relative;
+      }
+
+      h2 {
+        font-weight: 400;
+        text-align: center;
+      }
+
+      #file-picker,
+      #status {
+        display: none;
+      }
+
+      #hotdog-overlay,
+      #upload-form {
+        width: 100%;
+        height: 100%;
+        max-height: 350px;
+        display: block;
+        padding: 1rem;
+        z-index: 1;
+      }
+
+      #hotdog-overlay {
+        z-index: 2;
+        position: absolute;
+        top: 0;
+        left: 0;
+      }
+
+      #box-icon {
+        display: block;
+        width: 100%;
+        height: 80px;
+        text-align: center;
+        margin-bottom: 40px;
+      }
+
+      #upload-msg {
+        width: 100%;
+        text-align: center;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        cursor: pointer;
+        display: inline-block;
+        overflow: hidden;
+      }
+
+      .title {
+        width: 100%;
+        text-align: center;
+      }
+
+      .dragover {
+        background-color: grey;
+      }
+
+      #preview-img {
+        width: 100%;
+        height: 100%;
+        background: black;
+        background-size: contain;
+        background-repeat: no-repeat;
+        background-position: center;
+      }
+
+      #close {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        font-size: 30px;
+        cursor: pointer;
+      }
+
+      #close:hover,
+      #close:focus,
+      #close:active {
+        color: red;
+      }
+
+      #status {
+        font-size: 0.85em;
+        display: block;
+        width: 100%;
+        text-align: left;
+        padding: 1rem;
+        margin: 0;
+      }
+
+      #status .api-call {
+        font-family: "Roboto", sans-serif;
+        color: red;
+      }
+
+      #hotdog-overlay h3 {
+        padding: 0.25em;
+        margin: 0;
+        text-align: center;
+        color: yellow;
+        font-weight: 300;
+        padding-bottom: 23px;
+      }
+
+      #hotdog-overlay #isHotdog h3 {
+        background: green;
+      }
+
+      #hotdog-overlay #notHotdog h3 {
+        background: red;
+      }
+
+      #hotdog-overlay .img-wrapper {
+        width: 75px;
+        height: 75px;
+        border-radius: 100%;
+        top: -23px;
+        margin: 0 auto;
+        position: relative;
+      }
+
+      #hotdog-overlay .img {
+        background-image: url(https://storage.googleapis.com/jcham-1469824226729.appspot.com/hotdog-icon.png);
+        background-repeat: no-repeat;
+        width: 50px;
+        height: 50px;
+        background-size: contain;
+        margin: 0 auto;
+        border-radius: 100%;
+        position: absolute;
+        top: 12.5px;
+        left: 12.5px;
+      }
+
+      #hotdog-overlay #notHotdog .img-wrapper {
+        background: red;
+      }
+
+      #hotdog-overlay #isHotdog .img-wrapper {
+        background: green;
+      }
+
+      #hotdog-overlay #notHotdog .img-wrapper .img-overlay {
+        position: absolute;
+        top: 12.5px;
+        left: 12.5px;
+        color: white;
+        font-size: 80px;
+        line-height: 0.5;
+      }
+
+    </style>
+  </head>
+  <body>
+    <div id="close">&times;</div>
+    <h2 class="title">Cloud ML Hotdog</h2>
+    <div class="container">
+      <form id="upload-form" method="post" enctype="multipart/form-data">
+        <div id="preview-img" class="hide"></div>
+        <div id="upload-box">
+          <svg id="box-icon" xmlns="http://www.w3.org/2000/svg" width="50" height="43" viewBox="0 0 50 43" stroke="#212121"><path d="M48.4 26.5c-.9 0-1.7.7-1.7 1.7v11.6h-43.3v-11.6c0-.9-.7-1.7-1.7-1.7s-1.7.7-1.7 1.7v13.2c0 .9.7 1.7 1.7 1.7h46.7c.9 0 1.7-.7 1.7-1.7v-13.2c0-1-.7-1.7-1.7-1.7zm-24.5 6.1c.3.3.8.5 1.2.5.4 0 .9-.2 1.2-.5l10-11.6c.7-.7.7-1.7 0-2.4s-1.7-.7-2.4 0l-7.1 8.3v-25.3c0-.9-.7-1.7-1.7-1.7s-1.7.7-1.7 1.7v25.3l-7.1-8.3c-.7-.7-1.7-.7-2.4 0s-.7 1.7 0 2.4l10 11.6z"></path></svg>
+          <input type="file" name="files[]" id="file-picker">
+          <label for="file-picker" id="upload-msg"><strong>Choose a file</strong><span class="box-image"> or drag it here</span>.</label>
+        </div>
+      </form>
+      <div id="hotdog-overlay" class="hide">
+        <div id="isHotdog" class="hide">
+          <h3>Hotdog!</h3>
+          <div class="img-wrapper"><div class="img"></div></div>
+        </div>
+        <div id="notHotdog" class="hide">
+          <h3>Not hotdog!</h3>
+          <div class="img-wrapper"><div class="img"></div><span class="img-overlay">&times;</span></div>
+        </div>
+      </div>
+
+      <pre id="status" class="status-mlprediction"></pre>
+    </div>
+    <script>
+      var MLHotdog = {
+        $form: document.getElementById("upload-form"),
+        $filePicker: document.getElementById("file-picker"),
+        $previewImg: document.getElementById("preview-img"),
+        $uploadBox: document.getElementById("upload-box"),
+        $body: document.body,
+        $close: document.getElementById("close"),
+        $status: document.getElementById("status"),
+        $hotdogOverlay: document.getElementById("hotdog-overlay"),
+        isDragUpload: function() {
+          let d = document.createElement("div");
+          return ("draggable" in d) || ("ondragstart" in d && "ondrop" in d);
+        },
+        main: function() {
+          if (!this.isDragUpload()) {
+            alert("Needs a web browser which supports modern JS/HTML");
+          }
+
+          this.$body.classList.add("dragg-upload");
+
+          ["drag", "dragstart", "dragend", "dragover", "dragenter", "dragleave", "drop"].forEach((eventName) => {
+            this.$body.addEventListener(eventName, this.stopEventPropegation.bind(this));
+          });
+
+          ["dragover", "dragenter"].forEach((eventName) => {
+            this.$body.addEventListener(eventName, this.onDragStart.bind(this));
+          });
+
+          ["dragleave", "dragend", "drop"].forEach((eventName) => {
+            this.$body.addEventListener(eventName, this.onDragEnd.bind(this));
+          });
+
+          ["drop"].forEach((eventName) => {
+            this.$body.addEventListener(eventName, this.onDrop.bind(this));
+          });
+
+          ["change"].forEach((eventName) => {
+            this.$filePicker.addEventListener(eventName, this.onFilePicker.bind(this));
+          });
+
+          ["click"].forEach((eventName) => {
+            this.$close.addEventListener(eventName, this.onClose.bind(this));
+          });
+        },
+        onClose: function(e) {
+          this.$body.classList.remove("dragover");
+          this.$previewImg.classList.add("hide");
+          this.$uploadBox.classList.remove("hide");
+          this.$hotdogOverlay.classList.add("hide");
+          this.$hotdogOverlay.classList.add("hide");
+          this.$hotdogOverlay.querySelector("#isHotdog").classList.add("hide");
+          this.$hotdogOverlay.querySelector("#notHotdog").classList.add("hide");
+          this.$status.innerHTML = "";
+        },
+        onFilePicker: function(e) {
+          let files = e.target.files;
+          this.submit(files);
+        },
+        stopEventPropegation: function(e) {
+          e.preventDefault();
+          e.stopPropagation();
+        },
+        onDragStart: function(e) {
+          this.$body.classList.add("dragover");
+        },
+        onDragEnd: function(e) {
+          this.$body.classList.remove("dragover");
+        },
+        onDrop: function(e) {
+          let files = null;
+          if (e.dataTransfer.getData("URL")) {
+            files = [e.dataTransfer.getData("URL")];
+          } else if (e.dataTransfer.getData("text")) {
+            files = [e.dataTransfer.getData("text")];
+          } else {
+            files = e.dataTransfer.files;
+          }
+          this.submit(files);
+        },
+        previewImage: function(file) {
+          if (typeof file == "string") {
+            this.$previewImg.style.backgroundImage = "url(" + file + ")";
+            this.$previewImg.classList.remove("hide");
+            this.$uploadBox.classList.add("hide");
+          } else {
+            this.readFile(file).then((data) => {
+              this.$previewImg.style.backgroundImage = "url(" + data + ")";
+              this.$previewImg.classList.remove("hide");
+              this.$uploadBox.classList.add("hide");
+            });
+          }
+        },
+        readFile: function(file) {
+          return new Promise((resolve, reject) => {
+            let reader = new FileReader();
+            reader.onload = (e) => {
+              resolve(e.target.result);
+            };
+            reader.readAsDataURL(file);
+          });
+        },
+        predict: function(file) {
+          return new Promise((resolve, reject) => {
+            let req = new XMLHttpRequest();
+            req.addEventListener("load", (e) => {
+              if (e.target.status == 200) {
+                resolve(e);
+              } else {
+                reject(e);
+              }
+            });
+            req.addEventListener("error", (e) => {
+              reject(e);
+            });
+            req.open("POST", "/api/predict");
+            req.setRequestHeader("Content-Type", "application/json");
+
+            if (typeof file == "string") {
+              req.send(JSON.stringify({"fileUrl": file}));
+            } else {
+              this.readFile(file).then((data) => {
+                req.send(JSON.stringify({"fileBinary": data}));
+              });
+            }
+          });
+        },
+        syntaxHighlight: function(json) {
+          json = JSON.stringify(JSON.parse(json), undefined, 2);
+          json = json.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+          return json.replace(/("(\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?)/g, function (match) {
+            let cls = 'number';
+            if (/^"/.test(match)) {
+              if (/:$/.test(match)) {
+                cls = 'key';
+              } else {
+                cls = 'string';
+              }
+            } else if (/true|false/.test(match)) {
+              cls = 'boolean';
+            } else if (/null/.test(match)) {
+              cls = 'null';
+            }
+            return '<span class="' + cls + '">' + match + '</span>';
+          });
+        },
+        submit: function(files) {
+          this.onClose();
+          if (files.length < 1) { alert("No Images"); }
+          let file = files[0];
+          this.previewImage(file);
+          // show loading msg
+          this.$status.innerHTML = "<span class=\"api-call\">Fetching ML Prediction on if image shows a Hotdog...</span>";
+          this.predict(file).then((resp) => {
+            this.$status.innerHTML = this.syntaxHighlight(resp.srcElement.response);
+            let prediction = JSON.parse(resp.srcElement.response);
+            let isHotdog = (prediction.predictions[0].prediction == "hotdog");
+            if (isHotdog) {
+              this.$hotdogOverlay.classList.remove("hide");
+              this.$hotdogOverlay.querySelector("#isHotdog").classList.remove("hide");
+            } else {
+              this.$hotdogOverlay.classList.remove("hide");
+              this.$hotdogOverlay.querySelector("#notHotdog").classList.remove("hide");
+            }
+
+          }).catch((resp)=>{
+            let err = resp.srcElement.response;
+            try {
+              err = JSON.parse(err);
+            } catch(e) {
+              err = {"error": "Internal server error"};
+            }
+
+            this.$status.textContent = "Error: " + err.error;
+            console.error(resp);
+          });
+        }
+      };
+      MLHotdog.main();
+    </script>
+  </body>
+</html>
